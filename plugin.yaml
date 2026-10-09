@@ -1,0 +1,64 @@
+name: hermes-omatoast
+label: Omarchy Toast
+kind: platform
+version: 1.1.0
+description: >
+  Desktop toast channel for Omarchy / Hyprland. Delivers Hermes messages as
+  native Quickshell notification toasts in the top-right corner by shelling out
+  to omarchy-notification-send, so any cron job can surface its result on screen
+  with deliver=omatoast. Outbound-only: nothing is ever received from a toast.
+author: brewmaister
+
+# Declared settings surface. Rendered by the Desktop / TUI Plugins hub
+# (Plugins -> manage -> settings); values live under
+# config.yaml plugins.entries.hermes-omatoast.settings.<key> and are read by
+# the plugin through ctx.get_config. A `type: str` with `choices` renders as a
+# dropdown.
+config_schema:
+  enabled:
+    type: bool
+    label: Desktop toasts
+    description: Master switch. Off = this platform silently drops everything.
+    default: true
+  app_name:
+    type: str
+    label: App name
+    description: Name shown as the toast's source app.
+    default: Hermes
+  min_urgency:
+    type: str
+    label: Minimum urgency
+    description: >-
+      Skip anything below this. Critical covers alert-style messages only
+      (alert / latch / error / failed / critical); normal is everything else.
+    default: normal
+    choices: [low, normal, critical]
+  only_jobs:
+    type: str
+    label: Only these jobs
+    description: >-
+      Comma-separated cron job names or IDs to toast. Empty = every job. When
+      set, non-cron messages are suppressed too.
+    default: ""
+  skip_jobs:
+    type: str
+    label: Never these jobs
+    description: Comma-separated cron job names or IDs to suppress.
+    default: ""
+  strip_cron_wrapper:
+    type: bool
+    label: Clean cron headline
+    description: >-
+      Yes = the toast headline is the job name and the body is the payload.
+      No = keep Hermes' raw "Cronjob Response: ..." + job_id wrapper.
+    default: true
+
+optional_env:
+  - name: OMATOAST_APP_NAME
+    description: "App name shown on the toast"
+    prompt: "Toast app name (default: Hermes)"
+    password: false
+  - name: OMATOAST_HOME_CHANNEL
+    description: "Default label used by cron jobs that deliver=omatoast"
+    prompt: "Toast home label (default: desktop)"
+    password: false

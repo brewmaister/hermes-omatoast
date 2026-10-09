@@ -1,0 +1,20 @@
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Per-machine config and secrets — never commit
+.env
+*.local.yaml
+config.local.yaml
+
+# Editor / agent scaffolding — local-only, never published
+AGENTS.md
+.hermes/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

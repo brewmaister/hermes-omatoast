@@ -1,7 +1,7 @@
 name: hermes-omatoast
 label: Omarchy Toast
 kind: platform
-version: 1.1.0
+version: 1.2.0
 description: >
   Desktop toast channel for Omarchy / Hyprland. Delivers Hermes messages as
   native Quickshell notification toasts in the top-right corner by shelling out
@@ -33,6 +33,17 @@ config_schema:
       (alert / latch / error / failed / critical); normal is everything else.
     default: normal
     choices: [low, normal, critical]
+  sound:
+    type: str
+    label: Toast sound
+    description: >-
+      Play a sound with the toast. The Quickshell notification server only draws
+      the card and stays silent, so the plugin plays it itself with
+      canberra-gtk-play (fallback paplay/pw-play) from the freedesktop theme:
+      critical alerts get dialog-warning, everything else message-new-instant.
+      off = silent.
+    default: critical
+    choices: [off, critical, always]
   only_jobs:
     type: str
     label: Only these jobs

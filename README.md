@@ -114,6 +114,7 @@ Changes apply to the **next** message — settings are read per delivery, so the
 | `enabled` | boolean | `true` | Master switch. Off = this platform silently drops every message. |
 | `app_name` | string | `Hermes` | Name shown as the toast's source app. |
 | `min_urgency` | enum → `low` \| `normal` \| `critical` | `normal` | Skip anything below this level. `critical` matches alert-style text only. |
+| `sound` | enum → `off` \| `critical` \| `always` | `critical` | Play a sound with the toast. Quickshell's notification server never makes one, so the plugin plays it: `dialog-warning` for critical, `message-new-instant` otherwise, via `canberra-gtk-play` (fallback `paplay`/`pw-play`). `off` = silent. |
 | `only_jobs` | string | *(empty)* | Comma-separated job names or IDs to toast. Empty = every job. When set, non-cron messages are suppressed too. |
 | `skip_jobs` | string | *(empty)* | Comma-separated job names or IDs to suppress. |
 | `strip_cron_wrapper` | boolean | `true` | Show the job name as the headline instead of Hermes' raw `Cronjob Response: …` wrapper. |

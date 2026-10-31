@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 
 PLATFORM_NAME = "omatoast"
 NOTIFY_BIN = "omarchy-notification-send"
+SOUND_THEME_DIR = "/usr/share/sounds/freedesktop/stereo"
 DEFAULT_APP_NAME = "Hermes"
 DEFAULT_HOME_LABEL = "desktop"
 
@@ -70,7 +71,17 @@ _SETTING_DEFAULTS: dict[str, Any] = {
     "only_jobs": "",
     "skip_jobs": "",
     "strip_cron_wrapper": True,
+    "sound": "critical",
 }
+
+# Quickshell's notification server draws the card and plays nothing, so the
+# sound is ours to make. Freedesktop event id plus the matching .oga file, used
+# when the available player can't take an event id by name.
+_SOUND_EVENTS: dict[str, tuple[str, str]] = {
+    "critical": ("dialog-warning", "dialog-warning.oga"),
+    "normal": ("message-new-instant", "message-new-instant.oga"),
+}
+_SOUND_CHOICES = ("off", "critical", "always")
 
 
 # --------------------------------------------------------------------------
@@ -115,6 +126,52 @@ def _urgency_for(text: str) -> str:
     if any(marker in low for marker in _CRITICAL_MARKERS):
         return "critical"
     return "normal"
+
+
+def _sound_policy(settings: dict) -> str:
+    """``off`` | ``critical`` | ``always`` — anything unknown falls back to critical."""
+    value = str(settings.get("sound") or "").strip().lower()
+    return value if value in _SOUND_CHOICES else "critical"
+
+
+def _play_sound(urgency: str) -> None:
+    """Play a freedesktop sound for this toast, detached. Never raises, never waits.
+
+    The toast is already on screen when this runs: a missing player, a muted
+    sink or a crashed process must not turn a delivered message into an error.
+    """
+    event, filename = _SOUND_EVENTS.get(urgency, _SOUND_EVENTS["normal"])
+    env = dict(os.environ)
+    env["DBUS_SESSION_BUS_ADDRESS"] = _dbus_address()
+    env.setdefault("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+
+    argv: Optional[list[str]] = None
+    canberra = shutil.which("canberra-gtk-play")
+    if canberra:
+        argv = [canberra, "-i", event]
+    else:
+        track = os.path.join(SOUND_THEME_DIR, filename)
+        if os.path.exists(track):
+            for player in ("paplay", "pw-play"):
+                binary = shutil.which(player)
+                if binary:
+                    argv = [binary, track]
+                    break
+    if not argv:
+        logger.debug("omatoast: no sound player available")
+        return
+
+    try:
+        subprocess.Popen(
+            argv,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:  # sound is decoration on top of a delivered toast
+        logger.debug("omatoast: sound playback failed", exc_info=True)
 
 
 def _job_identity(content: str) -> tuple[str, str]:
@@ -250,6 +307,9 @@ def _deliver(
     urgency = _urgency_for(prepared)
     ok, identifier, error = _raw_toast(prepared, app_name, urgency)
     if ok:
+        policy = _sound_policy(settings)
+        if policy == "always" or (policy == "critical" and urgency == "critical"):
+            _play_sound(urgency)
         return "sent", identifier, None
     return "error", None, error
 
